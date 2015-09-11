@@ -143,9 +143,9 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
 
     def Receive(self, _timeStr):
         if self.device.inWaiting():#if serial buffer has byte(s)
-            if self.ui.byteData.isChecked():
-                lib.readByte(self.device, self.ui.receivedData)
-            else:
+            if self.ui.byteData.isChecked():#read as bytes
+                lib.readCommand(self.device, self.ui.receivedData)
+            else:#read as ascii string
                 if self.serialFlag:#if the string was completely read
                     self.serialFlag = 0#we are reading
                     if self.ui.newLineCheck.isChecked():#if we want new line
@@ -161,8 +161,6 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
             c =  self.ui.receivedData.textCursor()
             c.movePosition(QtGui.QTextCursor.End)
             self.ui.receivedData.setTextCursor(c)
-
-
 
     def clear(self, textBox):
         textBox.setText('')

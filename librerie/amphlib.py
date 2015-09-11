@@ -1,6 +1,7 @@
 from math import cos as cos, sin as sin, acos as acos, pi as pi, sqrt as sqrt, pow as pow
 import sys, glob, serial
 from PyQt4 import QtCore, QtGui, uic
+import binascii
 
 info = 'Amphitrite 2.0'
 
@@ -85,5 +86,31 @@ def serial_ports():
 
 def readByte(device, textBox):
     for i in range(1,device.inWaiting()):
-        c = device.read()
-        textBox.insertPlainText(QtCore.QString(c))
+        c = ord(device.read())
+        if c!= '\r':
+            textBox.insertPlainText(QtCore.QString(str(c)+" "))
+
+def readCommand(device, textBox):
+    comm=[]
+    i=1
+    _xor = 0
+    stringa = ""
+    if device.inWaiting():
+        if device.read() == "$":
+            for i in range(1,5):
+                c = device.read()
+                _xor = _xor ^ ord(c)
+                stringa = stringa + str(c)
+            stringa = stringa + device.read() + " "#read and inser comma
+            comm.append(ord(device.read()))
+            while comm[-1]!=42: #like *
+                _xor = _xor ^ comm[-1]
+                comm.append(ord(device.read()))
+            del comm[-1]#elimina *
+            for i in comm:
+                stringa = stringa + (str(i)+" ")
+            if _xor == ord(device.read()):#cheksum control
+                textBox.insertPlainText(QtCore.QString(stringa + '\n'))
+
+
+
