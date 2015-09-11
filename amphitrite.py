@@ -126,25 +126,36 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
         self.ui.BaudList.addItem(self.ui.persBaud.text())
         self.ui.persBaud.clear()
 
-    def Send(self, device, text):#send something via serial port
+    def Send(self, device, sendBox):#send something via serial port
         if device:
-            device.write(str(text.text()))#send text
-            #check if any ender is activate
-            if self.ui.radioButton_none.isChecked():
-                ender = ''
-            elif self.ui.radioButton_n.isChecked():
-                ender = '\n'
-            elif self.ui.radioButton_r.isChecked():
-                ender = ''
-            elif self.ui.radioButton_nr.isChecked():
-                ender = ''
-            device.write(ender)#send ender
-            self.clear(text)#clear text
+            starter=""
+            if self.ui.checkSumBox.isChecked():
+                starter="$"
+                _xor = 0
+                for i in str(sendBox.text()):
+                    _xor=_xor^ord(i)
+                ender="*"+str(_xor)+'\n'
+            #check if any ender is activate, that functionality is only if we don't use NMEA option
+            else:
+                if self.ui.radioButton_none.isChecked():
+                    ender = ''
+                elif self.ui.radioButton_n.isChecked():
+                    ender = '\n'
+                elif self.ui.radioButton_r.isChecked():
+                    ender = ''
+                elif self.ui.radioButton_nr.isChecked():
+                    ender = ''
+            device.write(starter+str(sendBox.text())+ender)#send text
+            self.ui.sendedData.insertPlainText(QtCore.QString(starter+str(sendBox.text())+ender))#sended debug data
+            self.clear(sendBox)#clear text
 
     def Receive(self, _timeStr):
         if self.device.inWaiting():#if serial buffer has byte(s)
             if self.ui.byteData.isChecked():#read as bytes
-                lib.readCommand(self.device, self.ui.receivedData)
+                #comando = lib.readCommand(self.device, self.ui.receivedData)
+                comando = lib.readCommander(self.device)
+                if comando:
+                    self.ui.receivedData.insertPlainText(QtCore.QString(comando['type']+','+str(comando['com'])+'\n'))
             else:#read as ascii string
                 if self.serialFlag:#if the string was completely read
                     self.serialFlag = 0#we are reading

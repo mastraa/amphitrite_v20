@@ -84,24 +84,21 @@ def serial_ports():
             pass
     return result
 
-def readByte(device, textBox):
-    for i in range(1,device.inWaiting()):
-        c = ord(device.read())
-        if c!= '\r':
-            textBox.insertPlainText(QtCore.QString(str(c)+" "))
-
 def readCommand(device, textBox):
+    #command must be like this: $COMM,values*checksum
+    #it will write commands on textBox
     comm=[]
-    i=1
     _xor = 0
     stringa = ""
-    if device.inWaiting():
-        if device.read() == "$":
-            for i in range(1,5):
-                c = device.read()
+    starter="$"
+    if device.inWaiting():#if there is any data
+        if device.read() == starter:#if the first data is starter
+            c=device.read()
+            while c!=",":
                 _xor = _xor ^ ord(c)
                 stringa = stringa + str(c)
-            stringa = stringa + device.read() + " "#read and inser comma
+                c = device.read()
+            stringa = stringa + c + " "#read and insert comma
             comm.append(ord(device.read()))
             while comm[-1]!=42: #like *
                 _xor = _xor ^ comm[-1]
@@ -111,6 +108,32 @@ def readCommand(device, textBox):
                 stringa = stringa + (str(i)+" ")
             if _xor == ord(device.read()):#cheksum control
                 textBox.insertPlainText(QtCore.QString(stringa + '\n'))
+
+def readCommander(device):
+    #command must be like this: $COMM,values*checksum
+    #it will return type of commands and the list of command-bytes
+    comm=[]
+    _xor = 0
+    type = ""
+    starter="$"
+    if device.inWaiting():#if there is any data
+        if device.read() == starter:#if the first data is starter
+            c=device.read()
+            while c!=",":
+                _xor = _xor ^ ord(c)
+                type = type + str(c)
+                c = device.read()
+            comm.append(ord(device.read()))
+            while comm[-1]!=42: #like *
+                _xor = _xor ^ comm[-1]
+                comm.append(ord(device.read()))
+            del comm[-1]#elimina *
+            if _xor != ord(device.read()):#cheksum control
+                type = "checkError"
+            return {'type':type, 'com':comm}
+    else:
+        return 0
+
 
 
 
