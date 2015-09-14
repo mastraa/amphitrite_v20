@@ -84,56 +84,66 @@ def serial_ports():
             pass
     return result
 
-def readCommand(device, textBox):
-    #command must be like this: $COMM,values*checksum
-    #it will write commands on textBox
-    comm=[]
-    _xor = 0
-    stringa = ""
-    starter="$"
-    if device.inWaiting():#if there is any data
-        if device.read() == starter:#if the first data is starter
-            c=device.read()
-            while c!=",":
-                _xor = _xor ^ ord(c)
-                stringa = stringa + str(c)
-                c = device.read()
-            stringa = stringa + c + " "#read and insert comma
-            comm.append(ord(device.read()))
-            while comm[-1]!=42: #like *
-                _xor = _xor ^ comm[-1]
-                comm.append(ord(device.read()))
-            del comm[-1]#elimina *
-            for i in comm:
-                stringa = stringa + (str(i)+" ")
-            if _xor == ord(device.read()):#cheksum control
-                textBox.insertPlainText(QtCore.QString(stringa + '\n'))
+def checkCommand(command, time):
+    comandi = dict()
+    comandi[0]=('Ricevuto', '<font color="red">errore di ricezione</font>','<font color="red">no starter</font>','<font color="red">no ender</font>')#ACK
+    comandi[1]=('Prova')#DATA
+    return time+":\t"+comandi[command[0]][command[1]]
 
-def readCommander(device):
-    #command must be like this: $COMM,values*checksum
-    #it will return type of commands and the list of command-bytes
+
+def readCommand(device):
     comm=[]
     _xor = 0
-    type = ""
     starter="$"
     if device.inWaiting():#if there is any data
         if device.read() == starter:#if the first data is starter
-            c=device.read()
-            while c!=",":
-                _xor = _xor ^ ord(c)
-                type = type + str(c)
-                c = device.read()
-            comm.append(ord(device.read()))
-            while comm[-1]!=42: #like *
-                _xor = _xor ^ comm[-1]
-                comm.append(ord(device.read()))
-            del comm[-1]#elimina *
-            if _xor != ord(device.read()):#cheksum control
-                type = "checkError"
-            return {'type':type, 'com':comm}
+            c = device.read()
+            while(c!="*"):
+                if(c!=","):
+                    comm.append(ord(c))
+                    _xor=_xor^comm[-1]
+                c=device.read()
+            if _xor == ord(device.read()):
+                return comm
+            else:
+                return "error"
     else:
         return 0
 
+def Send(device, starter, ender, delimiters, string):
+    _xor=0
+    device.write(starter)
+    if ord(string[0][0])>47 and ord(string[0][0])<58:
+        n = int(string[0])
+        device.write(chr(n))
+        _xor=_xor^n
+    else:
+        for i in string[0]:
+            device.write(i)
+            _xor=_xor^ord(i)
+    sended=starter+string[0]
+    for i in range(1,len(string)):
+        n=int(string[i])
+        if n < 255:
+            device.write(delimiters[0])
+            device.write(chr(n))
+            _xor=_xor^n
+            sended=sended+delimiters[0]+str(n)
+    device.write(delimiters[1])
+    device.write(chr(_xor))
+    device.write(ender)
+    return sended+delimiters[1]+str(_xor)+ender
 
+def shortToBytes(n):
+    b=[]
+    if n > 255:
+        b.append(n & 255)
+        n>>=8
+        b.append(n & 255)
+    else:
+        b.append(n)
+    return b
 
+def bytesToShort(b):
+    return ((b[0]<<8)+b[1])
 

@@ -180,6 +180,9 @@
          </item>
          <item>
           <widget class="QRadioButton" name="radioButton_n">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>n</string>
            </property>

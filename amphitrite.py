@@ -64,11 +64,11 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
         self.ui.SerialCheckButton.clicked.connect(self.SerialCheck)
         self.ui.connButton.clicked.connect(self.Connection)
         self.ui.persBaudSett.clicked.connect(self.addPersBaud)
-        self.ui.sendButton.clicked.connect(lambda: self.Send(self.device, self.ui.serialText))
+        self.ui.sendButton.clicked.connect(lambda: self.Sender(self.device, self.ui.serialText))
+        self.ui.serialText.returnPressed.connect(lambda: self.Sender(self.device, self.ui.serialText))
         self.ui.clearData.clicked.connect(lambda: self.clear(self.ui.receivedData))
         self.ui.readFreq.valueChanged.connect(self.getValue)
         self.ui.readFreqText.textEdited.connect(self.getValue)
-        self.ui.serialText.returnPressed.connect(lambda: self.Send(self.device, self.ui.serialText))
         self.ui.byteData.toggled.connect(lambda: self.newLine(self.ui.receivedData))
         
         self.SerialCheck()#first serial check attempt
@@ -107,8 +107,6 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
             baud = self.ui.BaudList.currentText() #get baudrate
             port = self.ui.SerialList.currentText() #get port
             #parameter summary
-            gui.baudLabel.setText(baud)
-            gui.serialLabel.setText(port)
             self.device = serial.Serial(str(port), int(baud)) #open connection
             gui.sendButton.setEnabled(1)
             gui.SerialList.setEnabled(0)
@@ -126,36 +124,27 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
         self.ui.BaudList.addItem(self.ui.persBaud.text())
         self.ui.persBaud.clear()
 
-    def Send(self, device, sendBox):#send something via serial port
-        if device:
-            starter=""
-            if self.ui.checkSumBox.isChecked():
-                starter="$"
-                _xor = 0
-                for i in str(sendBox.text()):
-                    _xor=_xor^ord(i)
-                ender="*"+str(_xor)+'\n'
-            #check if any ender is activate, that functionality is only if we don't use NMEA option
-            else:
-                if self.ui.radioButton_none.isChecked():
-                    ender = ''
-                elif self.ui.radioButton_n.isChecked():
-                    ender = '\n'
-                elif self.ui.radioButton_r.isChecked():
-                    ender = ''
-                elif self.ui.radioButton_nr.isChecked():
-                    ender = ''
-            device.write(starter+str(sendBox.text())+ender)#send text
-            self.ui.sendedData.insertPlainText(QtCore.QString(starter+str(sendBox.text())+ender))#sended debug data
-            self.clear(sendBox)#clear text
+    def Sender(self, device, sendBox):
+        if self.ui.checkSumBox.isChecked():
+            ender=""
+        elif self.ui.radioButton_none.isChecked():
+            ender = ''
+        elif self.ui.radioButton_n.isChecked():
+            ender = '\n'
+        elif self.ui.radioButton_r.isChecked():
+            ender = ''
+        elif self.ui.radioButton_nr.isChecked():
+            ender = ''
+        sended = lib.Send(device, "$",ender,[",","*"],(str(sendBox.text())).split(","))
+        self.ui.sendedData.insertPlainText(QtCore.QString(sended+"\n"))#sended debug data
+        self.clear(sendBox)#clear text
 
     def Receive(self, _timeStr):
         if self.device.inWaiting():#if serial buffer has byte(s)
             if self.ui.byteData.isChecked():#read as bytes
-                #comando = lib.readCommand(self.device, self.ui.receivedData)
-                comando = lib.readCommander(self.device)
+                comando = lib.readCommand(self.device)
                 if comando:
-                    self.ui.receivedData.insertPlainText(QtCore.QString(comando['type']+','+str(comando['com'])+'\n'))
+                    self.ui.receivedData.insertHtml(QtCore.QString(lib.checkCommand(comando, _timeStr)))
             else:#read as ascii string
                 if self.serialFlag:#if the string was completely read
                     self.serialFlag = 0#we are reading
