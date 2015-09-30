@@ -42,7 +42,7 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
         global gui
         self.cycleNumber = 0
         self.device = 0
-        self.i = 0 #cicle counter for che watch
+        self.i, self.n = 0, 0 #cicle counter for the watch and the connection check
         self.serialFlag = 1 #to know if the received data package is finished and set a new line
         self.status = 0; #connection status
         self.iconStatus = ["icons/red.png", "icons/green.png"] #icon list
@@ -83,6 +83,12 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
         if self.i == 1000/self.interval: #it works at 1Hz
             self.Time(timeStr) #clock update
             self.i = 0 #reset cycle counter
+            self.n = self.n + 1
+            if self.n == 60:
+                self.n=0
+                #sended = lib.Send(self.device, "$","",[",","*"],("0,4").split(","))
+                #self.ui.sendedData.insertPlainText(QtCore.QString(sended+"\n"))#sended debug data
+    
         if self.device:
             self.Receive(timeStr) #call serial reading
 
@@ -145,6 +151,7 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
                 comando = lib.readCommand(self.device)
                 if comando:
                     self.ui.receivedData.insertHtml(QtCore.QString(lib.checkCommand(comando, _timeStr)))
+                    self.ui.receivedData.insertPlainText("\n")
             else:#read as ascii string
                 if self.serialFlag:#if the string was completely read
                     self.serialFlag = 0#we are reading
