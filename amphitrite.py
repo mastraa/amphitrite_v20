@@ -148,9 +148,9 @@ class ImageDialog(QtGui.QMainWindow): #definisce la classe in modo che si possan
     def Receive(self, _timeStr):
         if self.device.inWaiting():#if serial buffer has byte(s)
             if self.ui.byteData.isChecked():#read as bytes
-                comando = lib.readCommand(self.device)
+                comando = lib.readIncomeData(self.device)
                 if comando:
-                    self.ui.receivedData.insertHtml(QtCore.QString(lib.checkCommand(comando, _timeStr)))
+                    self.ui.receivedData.insertHtml(QtCore.QString(lib.checkIncomeData(comando, _timeStr)))
                     self.ui.receivedData.insertPlainText("\n")
             else:#read as ascii string
                 if self.serialFlag:#if the string was completely read

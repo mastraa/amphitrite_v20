@@ -84,14 +84,19 @@ def serial_ports():
             pass
     return result
 
-def checkCommand(command, time):
+def checkIncomeData(command, time):
     comandi = dict()
     comandi[0]=('Ricevuto', '<font color="red">errore di ricezione</font>','<font color="red">no starter</font>','<font color="red">no ender</font>')#ACK
-    comandi[1]=('Prova')#DATA
+    comandi[1]=('$MVUP String','data')#$MVUP
+    comandi[10]=('$MVIC String','data,')#$MVIC
+    if (command[0]!=0): #non ancora implementata come funzionalita, dovrebbe inviare i byte giunti
+        stringa=[comandi[command[0]],command[1],command[2]]
+    else:
+        stringa=comandi[command[0]][command[1]]
     return time+":\t"+comandi[command[0]][command[1]]
 
 
-def readCommand(device):
+def readIncomeData(device):
     comm=[]
     _xor = 0
     starter="$"
